@@ -35,5 +35,10 @@ export default [
       ],
       "react/prop-types": "off"
     },
+    server: {
+      proxy: {
+        '/persons': 'http://localhost:3001'
+      }
+    }
   },
 ]
