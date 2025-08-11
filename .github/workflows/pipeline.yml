@@ -1,0 +1,70 @@
+name: Deployment pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
+
+jobs:
+  simple_deployment_pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install and lint backend
+        run: |
+          npm install
+          npm run lint
+        working-directory: phonebook-backend
+
+      - name: Install, lint and build frontend
+        run: |
+          npm install
+          npm run lint
+          npm run build
+        working-directory: phonebook-frontend
+
+      - uses: sws2apps/render-deployment@v1.8.0
+        if: github.event_name == 'push' && !contains(github.event.head_commit.message, '#skip')
+        with:
+          serviceId: ${{ secrets.RENDER_SERVICE_ID }}
+          apiKey: ${{ secrets.RENDER_API_KEY }}
+          multipleDeployment: false
+
+  tag_release:
+    needs: [simple_deployment_pipeline]
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' && !contains(github.event.head_commit.message, '#skip')
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bump version and push tag
+        uses: anothrNick/github-tag-action@1.73.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Notify success
+        uses: rjstone/discord-webhook-notify@v2
+        if: success()
+        with:
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+          severity: info
+          details: A new version has been released!
+          username: ${{ github.event.head_commit.author.username }}
+          title: ${{ github.repository }}
+          description: ${{ github.sha }}(https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+      - name: Notify failure
+        uses: rjstone/discord-webhook-notify@v2
+        if: failure()
+        with:
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+          severity: error
+          details: Build failed!
+          username: ${{ github.event.head_commit.author.username }}
+          title: ${{ github.repository }}
+          description: ${{ github.sha }}(https://github.com/${{ github.repository }}/commit/${{ github.sha }})
