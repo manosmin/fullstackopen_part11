@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
 import personService from "./services/persons.js";
 
 const Notification = ({ message }) => {
@@ -81,9 +80,9 @@ const App = () => {
 
   useEffect(() => {
     console.log("effect");
-    axios.get("http://localhost:3001/persons").then((response) => {
+    personService.getAll().then((response) => {
       console.log("promise fulfilled");
-      setPersons(response.data);
+      setPersons(response);
     });
   }, []);
 
@@ -120,7 +119,8 @@ const App = () => {
           }, 3000);
           setPersons(persons.filter((p) => p.id !== existingPerson.id));
         } else {
-          console.error("Error deleting person:", error);
+          setMessage({text: `Failed to update person: ${error.response.data.error}`, type: 'error'});
+          console.error("Error updating person:", error);
         }
       })
     } else {
@@ -134,6 +134,7 @@ const App = () => {
         }, 3000)
       })
       .catch((error) => {
+        setMessage({text: `Failed to create person: ${error.response.data.error}`, type: 'error'});
         console.error("Failed to create person", error);
       });
     }
@@ -154,7 +155,7 @@ const App = () => {
     return personService.deletePerson(id).then((response) => {
       console.log(response);
       setPersons(persons.filter((p) => p.id !== id));
-      setMessage({text: `Person ${response.name} deleted`, type: 'success'});
+      setMessage({text: `Person ${personToBeDeleted.name} deleted`, type: 'success'});
         setTimeout(() => {
           setMessage(null)
         }, 3000)

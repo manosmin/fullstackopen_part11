@@ -1,8 +1,10 @@
 const express = require('express')
 const app = express()
 const morgan = require('morgan')
+const cors = require('cors')
 const Person = require('./models/person')
 
+app.use(cors())
 app.use(express.json())
 app.use(express.static('dist'))
 
@@ -13,7 +15,7 @@ app.use(
 
 app.get('/api/persons', (request, response, next) => {
   Person.find({})
-    .then((persons) => response.json(persons))
+    .then((persons) => response.json(persons.map(p => {return { id: p.id, name: p.name, number: p.number }})))
     .catch(next)
 })
 
@@ -21,7 +23,7 @@ app.get('/api/persons/:id', (request, response, next) => {
   Person.findById(request.params.id)
     .then((person) => {
       if (person) {
-        response.json(person)
+        response.json({ id: person.id, name: person.name, number: person.number })
       } else {
         response.status(404).end()
       }
@@ -47,7 +49,7 @@ app.post('/api/persons', (request, response, next) => {
       const person = new Person({ name, number })
       return person.save()
     })
-    .then((savedPerson) => response.json(savedPerson))
+    .then((savedPerson) => response.json({ id: savedPerson.id, name: savedPerson.name, number: savedPerson.number }))
     .catch((error) => next(error))
 })
 
@@ -61,7 +63,7 @@ app.put('/api/persons/:id', (request, response, next) => {
   )
     .then((updatedPerson) => {
       if (updatedPerson) {
-        response.json(updatedPerson)
+        response.json({ id: updatedPerson.id, name: updatedPerson.name, number: updatedPerson.number })
       } else {
         response.status(404).end()
       }
