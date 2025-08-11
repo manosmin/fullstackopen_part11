@@ -34,11 +34,6 @@ export default [
         { allowConstantExport: true },
       ],
       "react/prop-types": "off"
-    },
-    server: {
-      proxy: {
-        '/api/persons': 'http://localhost:3001'
-      }
     }
   },
 ]
